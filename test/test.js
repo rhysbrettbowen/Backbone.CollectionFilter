@@ -68,6 +68,24 @@ define(['chai', 'Backbone.CollectionFilter'], function(chai) {
 			});
 		});
 
+		describe('filter on model changes', function() {
+			var odd = new Backbone.Model({a: 1});
+			var even = new Backbone.Model({a: 2});
+			var c = new Backbone.Collection([odd, even]);
+			var isEven = function(a) {return a.get('a') % 2 === 0;};
+			var f = new Backbone.CF(c, isEven);
+
+			it('should add a model when change makes model pass filter', function() {
+				odd.set('a', 2);
+				f.contains(odd).should.be.true;
+			});
+
+			it('should remove a model when change makes model fail filter', function() {
+				even.set('a', 1);
+				f.contains(even).should.be.false;
+			});
+		});
+
 	});
 
 });
