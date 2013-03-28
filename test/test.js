@@ -35,7 +35,37 @@ define(['chai', 'Backbone.CollectionFilter'], function(chai) {
 		});
 
 		describe('adding models', function() {
+			var odd = new Backbone.Model({a: 1});
+			var even = new Backbone.Model({a: 2});
+			var c = new Backbone.Collection();
+			var isEven = function(a) {return a.get('a') % 2 === 0;};
+			var f = new Backbone.CF(c, isEven);
 
+			it('should add model that satisfies filter', function() {
+				c.add(even);
+				f.contains(even).should.be.true;
+			});
+
+			it('should not add model when filter returns false', function() {
+				c.add(odd);
+				f.contains(odd).should.be.false;
+			});
+		});
+
+		describe('sorting models', function() {
+			it('should sort models based on it\'s comparator', function() {
+				var odd = new Backbone.Model({a: 1});
+				var even = new Backbone.Model({a: 2});
+				var c = new Backbone.Collection([odd, even]);
+				var revSort = function(a, b) {return b.get('a') - a.get('a');};
+				var retTrue = function() {return true;};
+				var f = new Backbone.CF(c, retTrue, {
+					comparator: revSort
+				});
+
+				f.models[0].should.equal(even);
+				f.models[1].should.equal(odd);
+			});
 		});
 
 	});
