@@ -43,12 +43,12 @@ define(['chai', 'Backbone.CollectionFilter'], function(chai) {
 
 			it('should add model that satisfies filter', function() {
 				c.add(even);
-				f.contains(even).should.be.true;
+				f.models.should.contain(even);
 			});
 
 			it('should not add model when filter returns false', function() {
 				c.add(odd);
-				f.contains(odd).should.be.false;
+				f.models.should.not.contain(odd);
 			});
 		});
 
@@ -77,12 +77,22 @@ define(['chai', 'Backbone.CollectionFilter'], function(chai) {
 
 			it('should add a model when change makes model pass filter', function() {
 				odd.set('a', 2);
-				f.contains(odd).should.be.true;
+				f.models.should.contain(odd);
 			});
 
 			it('should remove a model when change makes model fail filter', function() {
 				even.set('a', 1);
-				f.contains(even).should.be.false;
+				f.models.should.not.contain(even);
+			});
+		});
+
+		describe('collection functions', function() {
+			var m = new Backbone.Model();
+			var c = new Backbone.Collection();
+			var f = new Backbone.CF(c, function() {return true;});
+			it('should put model on original collection', function() {
+				f.add(m);
+				c.models.length.should.equal(1);
 			});
 		});
 

@@ -4,15 +4,21 @@
 // http://opensource.org/licenses/MIT
 // ==========================================
 
-define("Backbone.CollectionFilter", [
-	"underscore",
-	"backbone"
-  ],
-function(_, Backbone) {
+define('Backbone.CollectionFilter', [
+	'underscore',
+	'backbone'
+], function(_, Backbone) {
 
-	var noBind = ['on', 'trigger', 'off', 'at', 'pluck'];
+	var noBind = ['on', 'trigger', 'off', 'at', 'pluck', 'forEach', 'each',
+		'map', 'reduce', 'reduceRight', 'find', 'detect', 'filter', 'select',
+		'reject', 'every', 'all', 'some', 'any', 'include', 'contains',
+		'invoke', 'max', 'min', 'sortBy', 'sortedIndex', 'toArray', 'size',
+		'first', 'initial', 'rest', 'last', 'without', 'indexOf', 'shuffle',
+		'lastIndexOf', 'isEmpty', 'groupBy'];
 
 	var proto = {
+		filter: null,
+		comparator: null,
 		/**
 		 * override the where function to allow use of filter
 		 */
@@ -78,7 +84,7 @@ function(_, Backbone) {
 			return fn.apply((
 				this == binder ?
 					bindee :
-					this), [].prototype.slice.call(arguments));
+					this), [].slice.call(arguments));
 		};
 	};
 
@@ -98,17 +104,17 @@ function(_, Backbone) {
 		var filtered = new Filtered();
 
 		// add in instance variables
+		_.extend(filtered, proto);
 		filtered.collection = collection;
 		filtered.filter = filter;
 		if (options.comparator)
 			filtered.comparator = options.comparator;
-		_.extend(filtered, proto);
 		filtered._callbacks = {};
 		filtered._boundFns = [];
 
 		// bind functions from parent
 		for (var name in collection) {
-			if (!filtered[name] &&
+			if (proto[name] === undefined &&
 					!_.contains(leaveBind, name) &&
 					_.isFunction(collection[name])) {
 				filtered._boundFns.push(name);
