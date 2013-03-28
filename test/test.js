@@ -86,6 +86,28 @@ define(['chai', 'Backbone.CollectionFilter'], function(chai) {
 			});
 		});
 
+		describe('test bound function', function() {
+			var test;
+			var c = new (Backbone.Collection.extend({
+				testFn: function() {
+					test = this;
+				}
+			}))();
+			var f = new Backbone.CF(c, function(){});
+
+			it('should call collection\'s function with original context', function() {
+				f.testFn();
+				test.should.equal(test);
+			});
+
+			it('should call with given context if not filtered collection', function() {
+				var obj = {};
+				f.testFn.call(obj);
+				test.should.equal(obj);
+			});
+		});
+
+
 	});
 
 });
