@@ -17,20 +17,8 @@ define('Backbone.CollectionFilter', [
 		'lastIndexOf', 'isEmpty', 'groupBy'];
 
 	var proto = {
-		filter: null,
+		_filter: null,
 		comparator: null,
-		/**
-		 * override the where function to allow use of filter
-		 */
-		where: function(attrs) {
-			if (_.isEmpty(attrs)) return [];
-			return _.filter(this.models, function(model) {
-				for (var key in attrs) {
-					if (attrs[key] !== model.get(key)) return false;
-				}
-				return true;
-			});
-		},
 		/**
 		 * runs whenever there is an event on the parent collection
 		 */
@@ -40,15 +28,18 @@ define('Backbone.CollectionFilter', [
 			if (type === 'remove' && ! _.contains(this.models, data)) {
 				return;
 			}
+
+			var filt = this._filter(data);
 			// don't pass along add if the model doesn't pass the filter
-			if (type == 'add' && !this.filter(data)) {
+			if (type == 'add' && !filt) {
 				return;
 			}
 			// if a change is made to a model that changes whether it is in
 			// the collection then fire either add or remove
-			if (type.indexOf('change') === 0 &&  _.contains(this.models, data) != this.filter(data)) {
+			if (type.indexOf('change') === 0 &&
+					_.contains(this.models, data) != filt) {
 				this.redoFilter();
-				if (this.filter(data)) {
+				if (filt) {
 					this.trigger('add', data);
 				} else {
 					this.trigger('remove', data);
@@ -64,7 +55,7 @@ define('Backbone.CollectionFilter', [
 		 * reset the models based on the filter and sort
 		 */
 		redoFilter: function() {
-			this.models = _.filter(this.collection.models, this.filter);
+			this.models = this.collection.filter(this._filter);
 			var sort = this.comparator || this.collection.comparator;
 			if (sort)
 				this.models.sort(sort);
@@ -106,7 +97,7 @@ define('Backbone.CollectionFilter', [
 		// add in instance variables
 		_.extend(filtered, proto);
 		filtered.collection = collection;
-		filtered.filter = filter;
+		filtered._filter = filter;
 		if (options.comparator)
 			filtered.comparator = options.comparator;
 		filtered._callbacks = {};
