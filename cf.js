@@ -1,10 +1,12 @@
+//v1.1.0
+
 // ==========================================
 // Copyright 2013 Dataminr
 // Licensed under The MIT License
 // http://opensource.org/licenses/MIT
 // ==========================================
 
-define('Backbone.CollectionFilter', [
+define([
 	'underscore',
 	'backbone'
 ], function(_, Backbone) {
@@ -27,27 +29,50 @@ define('Backbone.CollectionFilter', [
 			// don't pass along remove if the model isn't in the filter
 			if (type === 'remove' && ! _.contains(this.models, data)) {
 				return;
+			} else if (type == 'remove' && this.simple) {
+				this.models.splice(this.indexOf(data), 1);
+				this.models.sort(this.comparator);
 			}
 
-			var filt = this._filter(data);
+			var filt;
+			if (type === 'add' || type.indexOf('change') === 0)
+				filt = this._filter(data);
 			// don't pass along add if the model doesn't pass the filter
-			if (type == 'add' && !filt) {
-				return;
+			if (type == 'add') {
+				if (!filt) {
+					return;
+				} else if (this.simple) {
+					this.models.push(data);
+					this.models.sort(this.comparator);
+				}
 			}
 			// if a change is made to a model that changes whether it is in
 			// the collection then fire either add or remove
 			if (type.indexOf('change') === 0 &&
 					_.contains(this.models, data) != filt) {
-				this.redoFilter();
+				if (!this.simple)
+					this.redoFilter();
 				if (filt) {
 					this.trigger('add', data);
+					if (this.simple) {
+						this.models.push(data);
+						this.models.sort(this.comparator);
+					}
 				} else {
 					this.trigger('remove', data);
+					if (this.simple) {
+						this.models.splice(this.indexOf(data), 1);
+						this.models.sort(this.comparator);
+					}
 					return;
 				}
 			}
 			// reset the models on any other event (just in case)
-			this.redoFilter();
+			if ((!this.simple && _.contains(this._filterChangeEvents, type)) ||
+				(this.simple && type == 'reset')) {
+				this.redoFilter();
+			}
+
 			// pass along the event
 			this.trigger(type, data);
 		},
@@ -56,9 +81,7 @@ define('Backbone.CollectionFilter', [
 		 */
 		redoFilter: function() {
 			this.models = this.collection.filter(this._filter);
-			var sort = this.comparator || this.collection.comparator;
-			if (sort)
-				this.models.sort(sort);
+			this.models.sort(this.comparator);
 			this.length = this.models.length;
 		}
 	};
@@ -70,10 +93,17 @@ define('Backbone.CollectionFilter', [
 	 * @param  {Object} binder if called with this context then will bind
 	 * @return {Function}
 	 */
-	var bindIf = function(fn, bindee, binder) {
+	var bindIf = function(that, fn, bindee) {
+		var getFn = function() {
+			var proto = Object.getPrototypeOf(that);
+			while (proto && !proto[fn]) {
+				proto = Object.getPrototypeOf(proto);
+			}
+			return proto && proto[fn];
+		};
 		return function() {
-			return fn.apply((
-				this == binder ?
+			return getFn().apply((
+				this == that ?
 					bindee :
 					this), [].slice.call(arguments));
 		};
@@ -83,23 +113,37 @@ define('Backbone.CollectionFilter', [
 	 * give a collection and filter function (and options) return the filtered collection
 	 */
 	Backbone.CF = function(collection, filter, options) {
-
 		options = _.extend({}, options);
 
-		// functions not to rebind
 		var leaveBind = _.union(noBind, options.noBind);
 
 		// setuo new collection
 		var Filtered = function() {};
 		Filtered.prototype = collection;
 		var filtered = new Filtered();
+		filtered._filterChangeEvents = options.overrideDefaultEvents ?  [] : [
+			'change',
+			'reset',
+			'add',
+			'remove',
+			'sort'
+		];
+
+		filtered.simple = options.simple;
+
+		if (_.isArray(options.filterChangeEvents))
+			filtered._filterChangeEvents =
+				filtered._filterChangeEvents.concat(options.filterChangeEvents);
 
 		// add in instance variables
 		_.extend(filtered, proto);
 		filtered.collection = collection;
 		filtered._filter = filter;
-		if (options.comparator)
-			filtered.comparator = options.comparator;
+		filtered.comparator = options.comparator ||
+			collection.comparator ||
+			function (a, b) {
+				return collection.indexOf(a) - collection.indexOf(b);
+			};
 		filtered._callbacks = {};
 		filtered._boundFns = [];
 
@@ -109,10 +153,10 @@ define('Backbone.CollectionFilter', [
 					!_.contains(leaveBind, name) &&
 					_.isFunction(collection[name])) {
 				filtered._boundFns.push(name);
-				filtered[name] = bindIf(collection[name], collection, filtered);
+				filtered[name] = bindIf(filtered, name, collection);
 			}
 		}
-
+		filtered._events = {};
 		// setup and run the filter
 		filtered.redoFilter();
 		collection.on('all', filtered.onFilter, filtered);
