@@ -14,7 +14,7 @@ define('Backbone.CollectionFilter', [
 		'reject', 'every', 'all', 'some', 'any', 'include', 'contains',
 		'invoke', 'max', 'min', 'sortBy', 'sortedIndex', 'toArray', 'size',
 		'first', 'initial', 'rest', 'last', 'without', 'indexOf', 'shuffle',
-		'lastIndexOf', 'isEmpty', 'groupBy'];
+		'lastIndexOf', 'isEmpty', 'groupBy', 'toJSON'];
 
 	var proto = {
 		_filter: null,
