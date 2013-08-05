@@ -18,6 +18,27 @@ var notGreenCollection = new Backbone.CollectionFilter(myCollection, function(ch
 
 the filtered collection will inherit all functions and bind them to the original collection except on, off, trigger, at and pluck. It will even return the paramaters set on the parent collection (e.g. notGreenCollection.enhance === true) unless you set the parameter on the instance (so make sure you use setters, e.g. notGreenCollection.setEnhance(false) instead of notGreenCollection.enhance = false).
 
+##BOUNS!##
+
+added in multifilter.js which requires CF but makes it easy to add mutiple filters on and off a collection:
+
+```javascript
+var filters = {
+	isGreen: function(model) {
+		return model.get('color') == 'green';
+	},
+	isSquare: function(model) {
+		return model.get('shape') == 'square';
+	}
+};
+
+myCollection = Multifilter(myCollection, filters);
+
+myCollection.addFilter('isGreen'); // now only greens will show
+myCollection.addFilter('isSquare'); // now only green squares
+myCollection.removeFilter('isGreen'); // now only squares
+```
+
 #Changelog
 
 ##v1.1.0
