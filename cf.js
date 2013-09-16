@@ -79,11 +79,11 @@ define([
 		/**
 		 * reset the models based on the filter and sort
 		 */
-		redoFilter: function() {
-			this.models = this.collection.filter(this._filter);
-			this.models.sort(this.comparator);
-			this.length = this.models.length;
-		}
+  	        redoFilter: function() {
+                    this.models = this.collection.filter(this._filter);
+                    this.models.sort(this.comparator);
+                    this.length = this.models.length;
+    		}
 	};
 
 	/**
@@ -139,7 +139,7 @@ define([
 		_.extend(filtered, proto);
 		filtered.collection = collection;
 		filtered._filter = filter;
-		filtered.comparator = options.comparator ||
+		var comparator = options.comparator ||
 			collection.comparator ||
 			function (a, b) {
 				return collection.indexOf(a) - collection.indexOf(b);
@@ -156,6 +156,10 @@ define([
 				filtered[name] = bindIf(filtered, name, collection);
 			}
 		}
+		
+                // bind comparator
+                filtered.comparator = _.bind(comparator, filtered);
+
 		filtered._events = {};
 		// setup and run the filter
 		filtered.redoFilter();
